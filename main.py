@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+from pathlib import Path
 
 # The following file describes how a cli can be represented using python data structures.
 # In effect, this is a json representation of a cli, however we must represent the handler functions.
 # A simple function (make_parser) can be used to generate a parser from this.
-
 
 ABOUT = "about"
 FLAGS = "flags"
@@ -47,6 +47,21 @@ def make_parser(name, data, parser=None):
     return parser
 
 
+app_name = "my_app"
+
+config_dir = Path.joinpath(Path.home(), ".config", app_name)
+
+def ensure_config_dir(config_dir_path, prompt=True):
+    p = Path(config_dir_path)
+    if prompt and not p.exists():
+        result = input("Create '{}' [y/N]\n".format(config_dir_path))
+        if result != "y":
+            exit()
+    p.mkdir(parents=True, exist_ok=True)
+
+def initialize(prompt=True):
+    ensure_config_dir(config_dir, prompt=prompt)
+
 app = {
     ABOUT: {
         "description": "Welcome to my command line interface",
@@ -71,6 +86,12 @@ app = {
         },
     },
     SUBCOMMANDS: {
+        "init": {
+            ABOUT: {
+                "description": "Initialize the application",
+            },
+            HANDLER: lambda _: initialize(prompt=True)
+        },
         "sub1": {
             ABOUT: {
                 "description": "A description of sub1",
@@ -131,7 +152,7 @@ app = {
 }
 
 
-p = make_parser("my_app", app)
+p = make_parser(app_name, app)
 
 if __name__ == '__main__':
     args = p.parse_args()
