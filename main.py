@@ -1,7 +1,52 @@
-# python-cli-template
-A template for creating cli tools using python.
+#!/usr/bin/env python3
 
-```python
+import argparse
+
+# The following file describes how a cli can be represented using python data structures.
+# In effect, this is a json representation of a cli, however we must represent the handler functions.
+# A simple function (make_parser) can be used to generate a parser from this.
+
+
+ABOUT = "about"
+FLAGS = "flags"
+SUBCOMMANDS = "subcommands"
+DEFAULTS = "defaults"
+ARGS = "args"
+HANDLER = "handler"
+
+
+def make_parser(name, data, parser=None):
+    constructor_args = data.get(ABOUT, {})
+    # override any "prog" name.
+    constructor_args["prog"] = name
+    if parser is None:
+        parser = argparse.ArgumentParser(**constructor_args)
+    else:
+        subparser = parser
+        parser = subparser.add_parser(name, **constructor_args)
+
+    handler = data.get(HANDLER, lambda _: parser.print_help())
+    defaults = data.get(DEFAULTS, {})
+    defaults["func"] = defaults.get("func", handler)
+    parser.set_defaults(**defaults)
+
+    flags = data.get(FLAGS, {})
+    for flag, kwargs in flags.items():
+        parser.add_argument(*flag.split(","), **kwargs)
+
+    args = data.get(ARGS, [])
+    for (arg, kwargs) in args:
+        parser.add_argument(arg, **kwargs)
+
+    subcommands = data.get(SUBCOMMANDS, {})
+    if subcommands:
+        subparser = parser.add_subparsers(title="Available Commands")
+        for k, v in subcommands.items():
+            make_parser(k, v, parser=subparser)
+
+    return parser
+
+
 app = {
     ABOUT: {
         "description": "Welcome to my command line interface",
@@ -91,25 +136,3 @@ p = make_parser("my_app", app)
 if __name__ == '__main__':
     args = p.parse_args()
     args.func(args)
-
-```
-
-```
-$ ./main.py
-usage: my_app [-h] [--flag-one STRING] [--flag-two COUNT] [--verbose] {sub1,sub2} ...
-
-Welcome to my command line interface
-
-options:
-  -h, --help         show this help message and exit
-  --flag-one STRING  Use flag one to do something
-  --flag-two COUNT   Use flag two to do something else
-  --verbose, -v      Log additional information
-
-Available Commands:
-  {sub1,sub2}
-    sub1             Help for sub1
-    sub2             Help for sub2
-
-Text following the argument descriptions
-```
