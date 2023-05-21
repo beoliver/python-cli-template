@@ -48,13 +48,7 @@ def make_parser(name, data, parser=None):
     return parser
 
 
-app_name = "my_app"
-
-config_dir = Path.joinpath(Path.home(), ".config", app_name)
-config_file = Path.joinpath(config_dir, "config.json")
-
-
-def create_config(config_file, prompt=True):    
+def create_config(config_file, prompt=True):
     p = Path(config_file)
     if not p.exists():
         if prompt:
@@ -67,8 +61,12 @@ def create_config(config_file, prompt=True):
         logging.debug("Creating config file: {}".format(config_file))
         p.touch(exist_ok=True)
 
+
 def initialize(args):
     create_config(args.get("config"), prompt=args.get("prompt"))
+
+
+app_name = "my_app"
 
 app = {
     ABOUT: {
@@ -97,7 +95,7 @@ app = {
             "metavar": "PATH",
             "type": str,
             "help": "Path to a custom config file",
-            "default": str(config_file),
+            "default": Path.joinpath(Path.home(), ".config", app_name, "config.json"),
         },
     },
     SUBCOMMANDS: {
