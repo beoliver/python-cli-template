@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 from pathlib import Path
 
 # The following file describes how a cli can be represented using python data structures.
@@ -53,20 +54,21 @@ config_dir = Path.joinpath(Path.home(), ".config", app_name)
 config_file = Path.joinpath(config_dir, "config.json")
 
 
-def ensure_config(config_file, prompt=True):
-    config_dir = Path(config_file).parent
+def create_config(config_file, prompt=True):    
     p = Path(config_file)
-    if not p.exists() and prompt:
-        result = input("Create '{}' [y/N]\n".format(p))
-        if result != "y":
-            exit()
-    config_dir.mkdir(parents=True, exist_ok=True)
-    p.touch(exist_ok=True)
-
+    if not p.exists():
+        if prompt:
+            result = input("Create '{}' [y/N]\n".format(p))
+            if result != "y":
+                exit()
+        config_dir = Path(config_file).parent
+        logging.debug("Creating config directory: {}".format(config_dir))
+        config_dir.mkdir(parents=True, exist_ok=True)
+        logging.debug("Creating config file: {}".format(config_file))
+        p.touch(exist_ok=True)
 
 def initialize(args):
-    ensure_config(args.config, prompt=args.prompt)
-
+    create_config(args.get("config"), prompt=args.get("prompt"))
 
 app = {
     ABOUT: {
@@ -87,8 +89,9 @@ app = {
             "help": "Use flag two to do something else",
         },
         "--verbose,-v": {
-            "action": "store_true",
-            "help": "Log additional information",
+            "action": "count",
+            "help": "Set the verbosity level for logging",
+            "default": 0
         },
         "--config": {
             "metavar": "PATH",
@@ -174,5 +177,14 @@ app = {
 p = make_parser(app_name, app)
 
 if __name__ == '__main__':
-    args = p.parse_args()
-    args.func(args)
+    namespace = p.parse_args()
+    loggingLevel = {
+        0: logging.CRITICAL,
+        1: logging.WARN,
+        2: logging.INFO,
+        3: logging.DEBUG,
+    }.get(min(namespace.verbose, 3))
+    logging.basicConfig(encoding="utf-8", level=loggingLevel)
+    namespace_dict = vars(namespace)
+    logging.debug(namespace_dict)
+    namespace.func(namespace_dict)
