@@ -50,17 +50,23 @@ def make_parser(name, data, parser=None):
 app_name = "my_app"
 
 config_dir = Path.joinpath(Path.home(), ".config", app_name)
+config_file = Path.joinpath(config_dir, "config.json")
 
-def ensure_config_dir(config_dir_path, prompt=True):
-    p = Path(config_dir_path)
-    if prompt and not p.exists():
-        result = input("Create '{}' [y/N]\n".format(config_dir_path))
+
+def ensure_config(config_file, prompt=True):
+    config_dir = Path(config_file).parent
+    p = Path(config_file)
+    if not p.exists() and prompt:
+        result = input("Create '{}' [y/N]\n".format(p))
         if result != "y":
             exit()
-    p.mkdir(parents=True, exist_ok=True)
+    config_dir.mkdir(parents=True, exist_ok=True)
+    p.touch(exist_ok=True)
 
-def initialize(prompt=True):
-    ensure_config_dir(config_dir, prompt=prompt)
+
+def initialize(args):
+    ensure_config(args.config, prompt=args.prompt)
+
 
 app = {
     ABOUT: {
@@ -84,13 +90,26 @@ app = {
             "action": "store_true",
             "help": "Log additional information",
         },
+        "--config": {
+            "metavar": "PATH",
+            "type": str,
+            "help": "Path to a custom config file",
+            "default": str(config_file),
+        },
     },
     SUBCOMMANDS: {
         "init": {
             ABOUT: {
-                "description": "Initialize the application",
+                "description": "Initialize the application. Required if you do not wish to explicitly specify a config file.",
             },
-            HANDLER: lambda _: initialize(prompt=True)
+            FLAGS: {
+                "--no-prompt": {
+                    "action": "store_false",
+                    "dest": "prompt",
+                    "help": "Do not prompt for confirmation",
+                }
+            },
+            HANDLER: initialize
         },
         "sub1": {
             ABOUT: {
