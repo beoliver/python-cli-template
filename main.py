@@ -48,22 +48,22 @@ def make_parser(name, data, parser=None):
     return parser
 
 
-def create_config(config_file, prompt=True):
-    p = Path(config_file)
-    if not p.exists():
+def create_config(config_dir, prompt=True):
+    config_dir = Path(config_dir)
+    if not config_dir.exists():
         if prompt:
-            result = input("Create '{}' [y/N]\n".format(p))
+            result = input("Create '{}' [y/N]\n".format(config_dir))
             if result != "y":
-                exit()
-        config_dir = Path(config_file).parent
+                exit()        
         logging.debug("Creating config directory: {}".format(config_dir))
         config_dir.mkdir(parents=True, exist_ok=True)
-        logging.debug("Creating config file: {}".format(config_file))
-        p.touch(exist_ok=True)
 
 
-def initialize(args):
-    create_config(args.get("config"), prompt=args.get("prompt"))
+def initialize_config_dir(args):
+    create_config(args.get("config_dir"), prompt=args.get("prompt"))
+
+def show_config(args):
+    print(args.get("config_dir"))
 
 
 app_name = "my_app"
@@ -91,26 +91,41 @@ app = {
             "help": "Set the verbosity level for logging",
             "default": 0
         },
-        "--config": {
+        "--config-dir": {
             "metavar": "PATH",
             "type": str,
-            "help": "Path to a custom config file",
-            "default": Path.joinpath(Path.home(), ".config", app_name, "config.json"),
+            "help": "Path to a custom config directory",
+            "default": Path.joinpath(Path.home(), ".config", app_name),
         },
     },
     SUBCOMMANDS: {
-        "init": {
+        "config": {
             ABOUT: {
-                "description": "Initialize the application. Required if you do not wish to explicitly specify a config file.",
+                "description": "Work with the config",
             },
-            FLAGS: {
-                "--no-prompt": {
-                    "action": "store_false",
-                    "dest": "prompt",
-                    "help": "Do not prompt for confirmation",
+            SUBCOMMANDS: {
+                "init": {
+                    ABOUT: {
+                        "description": "Initialize the application. Required if you do not wish to explicitly use the --config-dir flag.",
+                        "help": "Initialize the application."
+                    },
+                    FLAGS: {
+                        "--no-prompt": {
+                            "action": "store_false",
+                            "dest": "prompt",
+                            "help": "Do not prompt for confirmation",
+                        }
+                    },
+                    HANDLER: initialize_config_dir
+                },
+                "show": {
+                    ABOUT: {
+                        "description": "Show the config directory",
+                        "help": "Show the config directory"
+                    },
+                    HANDLER: show_config
                 }
-            },
-            HANDLER: initialize
+            }
         },
         "sub1": {
             ABOUT: {
