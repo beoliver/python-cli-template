@@ -175,14 +175,19 @@ app = {
 p = make_parser(app_name, app)
 
 if __name__ == '__main__':
-    namespace = p.parse_args()
-    loggingLevel = {
-        0: logging.CRITICAL,
-        1: logging.WARN,
-        2: logging.INFO,
-        3: logging.DEBUG,
-    }.get(min(namespace.verbose, 3))
-    logging.basicConfig(encoding="utf-8", level=loggingLevel)
-    namespace_dict = vars(namespace)
-    logging.debug(namespace_dict)
-    namespace.func(namespace_dict)
+    try:
+        namespace = p.parse_args()
+        loggingLevel = {
+            0: logging.CRITICAL,
+            1: logging.WARN,
+            2: logging.INFO,
+            3: logging.DEBUG,
+        }.get(min(namespace.verbose, 3))
+        logging.basicConfig(encoding="utf-8", level=loggingLevel)
+        namespace_dict = vars(namespace)
+        logging.debug(namespace_dict)
+        namespace.func(namespace_dict)
+    except Exception as e:
+        logging.exception(e)
+        p.print_help()
+        exit(1)
